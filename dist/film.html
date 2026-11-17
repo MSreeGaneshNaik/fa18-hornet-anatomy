@@ -3248,6 +3248,7 @@ function boot() {
       CAM.fly = null; CAM.user = true;
       return { w: PIPE.cw, h: PIPE.ch, ss: PIPE.ss, gpu: gpuName() };
     },
+    line(px) { if (PIPE.still && PIPE.still.line !== px) { PIPE.still.line = px; PIPE.comp.uniforms.uLW.value = Math.max(1, px * PIPE.ss); } },      // ink weight, in output pixels
     theme(t) { if (document.documentElement.dataset.theme !== t) { document.documentElement.dataset.theme = t; retheme(); } },
     pose(p) { pose(p); snap(); applyFrame(1e-6); CAM.snap = false; CAM.user = true; },     // one tiny step puts every part where the pose says
     step(dt) { applyFrame(dt); },
@@ -3438,14 +3439,15 @@ function frame(g, W, HH, t, st, fps, draw) {
   if (shot.each) shot.each(H.C, t - shot.t0);
   F.step(1 / fps);
   if (!draw) return;                                   // a frame nobody asked for still moves the animation on
-  const cam = camOf(shot, t);
+  const cam = camOf(shot, t), L = FILM.look;
+  F.line(shot.look === "lines" ? (L.line * W) / 3840 : st.line);      // the bare drawing is inked heavier than the shaded one
   if (shot.look === "lines") {
     H.MODS.deck.group.visible = false;
-    const cv = F.frame(cam), reveal = shot.reveal ? shot.reveal(t) : 1, gain = 1 + 0.5 * Math.max(pulse(t, BUILD_HITS, 9), pulse(t, [lb(1), lb(2), lb(3), lb(4), lb(6)], 8));
+    const cv = F.frame(cam), reveal = shot.reveal ? shot.reveal(t) : 1, gain = L.gain * (1 + L.pulse * Math.max(pulse(t, BUILD_HITS, 9), pulse(t, [lb(1), lb(2), lb(3), lb(4), lb(6)], 8)));
     g.fillStyle = "#000000"; g.fillRect(0, 0, W, HH);
     g.save();
     if (reveal < 1) { g.beginPath(); g.rect(0, 0, W * reveal, HH); g.clip(); }
-    g.filter = `brightness(${(0.72 * gain).toFixed(3)}) contrast(2.2)`;
+    g.filter = `brightness(${gain.toFixed(3)}) contrast(${L.contrast})`;      // fills fall to black, ink stays: a line drawing
     g.drawImage(cv, 0, 0, W, HH);
     g.restore();
   } else g.drawImage(F.frame(cam), 0, 0, W, HH);
@@ -3492,7 +3494,7 @@ async function mixAudio(file) {
 const tick = () => new Promise((r) => { const ch = new MessageChannel(); ch.port1.onmessage = () => r(); ch.port2.postMessage(0); });   // yields without a timer: timers stall in a background window
 
 // ---- the run ----
-const FILM = (window.FILM = { result: null, stills: {}, status: "idle", progress: 0, SHOTS, TITLES, DROP, RIDE_END, FINAL, DUR, mix: mixAudio });
+const FILM = (window.FILM = { look: { line: 3, gain: 1.15, pulse: 0.45, contrast: 2.2 }, result: null, stills: {}, status: "idle", progress: 0, SHOTS, TITLES, DROP, RIDE_END, FINAL, DUR, mix: mixAudio });
 const say = (s) => { FILM.status = s; const el = document.getElementById("filmStatus"); if (el) el.textContent = s; };
 FILM.run = async function (o = {}) {
   const W = o.w || 3840, HH = o.h || 2160, fps = o.fps || 60, N = Math.round(DUR * fps), encode = o.encode !== false, t00 = performance.now();
@@ -3528,7 +3530,7 @@ FILM.run = async function (o = {}) {
       }
     }
     // the poster: the title card with both engines lit. It is also the film's first frame, so every thumbnail shows it.
-    const st = { shot: null }, end = SHOTS[SHOTS.length - 1], card = TITLES[TITLES.length - 1];
+    const st = { shot: null, line: o.line || Math.max(1, W / 3000) }, end = SHOTS[SHOTS.length - 1], card = TITLES[TITLES.length - 1];
     F.theme("dark"); F.pose(BURNER); end.base = framed(end.view, W / HH); for (let i = 0; i < Math.round(0.4 * fps); i++) F.step(1 / fps);
     g.drawImage(F.frame({ ...end.base }), 0, 0, W, HH); drawTitle(g, W, HH, card, 1, "dark");
     const poster = await createImageBitmap(comp);
