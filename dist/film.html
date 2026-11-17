@@ -3515,8 +3515,11 @@ FILM.run = async function (o = {}) {
       if (mix) {
         const aenc = new AudioEncoder({ output: (chunk, meta) => mux.addAudioChunk(chunk, meta), error: (e) => { encErr = e; } });
         aenc.configure({ codec: "mp4a.40.2", numberOfChannels: 2, sampleRate: 48000, bitrate: 256000 });
-        for (let at = 0, step = 48000; at < mix.n; at += step) {          // a second at a time
-          const n = Math.min(step, mix.n - at), planar = new Float32Array(2 * n); planar.set(mix.L.subarray(at, at + n), 0); planar.set(mix.R.subarray(at, at + n), n);
+        // An AAC encoder puts its own run-in at the head of the stream (2,112 samples here, measured on the finished file) and
+        // players play it, which would leave every hit 44 ms behind the picture. So the sound is fed that much early.
+        const lead = o.priming ?? 2112, total = mix.n - lead;
+        for (let at = 0, step = 48000; at < total; at += step) {           // a second at a time
+          const n = Math.min(step, total - at), planar = new Float32Array(2 * n); planar.set(mix.L.subarray(lead + at, lead + at + n), 0); planar.set(mix.R.subarray(lead + at, lead + at + n), n);
           const ad = new AudioData({ format: "f32-planar", sampleRate: 48000, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round((at / 48000) * 1e6), data: planar });
           aenc.encode(ad); ad.close();
         }
