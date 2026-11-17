@@ -15,7 +15,7 @@ Light the afterburners, take the airframe apart down to the radar, cannon, cockp
 [![Stills up to 6K](https://img.shields.io/badge/stills-6016%20%C3%97%203384-0072B5?style=flat-square&labelColor=0B0B0B)](#stills-rendered-on-your-own-gpu)
 [![License MIT](https://img.shields.io/badge/license-MIT-E8B84A?style=flat-square&labelColor=0B0B0B)](LICENSE)
 
-[**Live demo**](https://msreeganeshnaik.github.io/fa18-hornet-anatomy/) &nbsp;·&nbsp; [Tour](#the-tour) &nbsp;·&nbsp; [What's inside](#whats-inside) &nbsp;·&nbsp; [Stills](#stills-rendered-on-your-own-gpu) &nbsp;·&nbsp; [Run it](#run-it) &nbsp;·&nbsp; [How it's built](#how-it-is-built) &nbsp;·&nbsp; [The aircraft](#fa-18a-at-a-glance) &nbsp;·&nbsp; [Sources](#sources)
+[**Live demo**](https://msreeganeshnaik.github.io/fa18-hornet-anatomy/) &nbsp;·&nbsp; [Tour](#the-tour) &nbsp;·&nbsp; [What's inside](#whats-inside) &nbsp;·&nbsp; [Stills](#stills-rendered-on-your-own-gpu) &nbsp;·&nbsp; [Film](#the-film) &nbsp;·&nbsp; [Run it](#run-it) &nbsp;·&nbsp; [How it's built](#how-it-is-built) &nbsp;·&nbsp; [The aircraft](#fa-18a-at-a-glance) &nbsp;·&nbsp; [Sources](#sources)
 
 <br />
 
@@ -129,6 +129,19 @@ It prints the GPU it found and refuses to run on a software renderer unless you 
 
 ---
 
+## The film
+
+`film.html` is the same page with a director on top (`film/director.js`). It renders a 45-second cut of the drawing at 3840 × 2160, 60 frames a second, entirely in the browser on your own GPU: every frame is drawn at 7680 × 4320 and filtered down, type is drawn as vectors on a 2D canvas, the browser's hardware H.264 encoder does the encoding, and the page muxes the MP4 with the soundtrack. On an Apple M4 Pro the whole film takes about two minutes.
+
+1. Open [`/film.html`](https://msreeganeshnaik.github.io/fa18-hornet-anatomy/film.html) in Chrome or another Chromium browser.
+2. Choose a soundtrack, press **Render 3840 × 2160**, then **Save MP4**.
+
+The cut is locked to one particular track at 134 beats a minute: an eight-bar build over bare line drawings, the drop, fifteen bars of the aircraft at work, the track's own ending, then the title held in silence. The soundtrack itself is not in this repository. To cut to a different track, change the tempo, the drop time and the edit list at the top of `film/director.js`; the shots and titles are plain lists below them.
+
+Details worth knowing: the sound is fed to the encoder 2,112 samples early, because an AAC encoder puts that much run-in at the head of the stream and players play it; and the page finds the drop in the decoded track for itself, because decoders disagree by a few milliseconds about where an MP3 starts.
+
+---
+
 ## Run it
 
 **Just view it:** go to the [live site](https://msreeganeshnaik.github.io/fa18-hornet-anatomy/), or download [`dist/hornet.html`](dist/hornet.html) and open it in a current Chrome, Edge, Safari or Firefox. It needs an internet connection the first time, to load three.js and two fonts from their CDNs, and it needs WebGL 2.
@@ -186,6 +199,7 @@ One HTML file, no framework, one dependency (three.js r160 from a CDN). `scripts
 | `src/models/43-f404.js` | The engine on the stand |
 | `src/app/50-app.js`, `60-ui.js`, `70-main.js` | State and animation, interface, boot and frame loop, still export |
 | `src/app/65-stills.js` | The fourteen set pieces |
+| `film/director.js` | The film: soundtrack edit, shots, titles, encoding |
 
 Coordinates are in metres: nose towards +x, up +y, starboard +z. The drawing engine is the one from [Apollo 11 Anatomy](https://github.com/MSreeGaneshNaik/Apollo-11-Anatomy.).
 
@@ -249,6 +263,7 @@ Rated figures at sea level, standing still. Everything in the live panel is work
 - [three.js](https://threejs.org/) r160 (MIT)
 - Fonts: [Archivo](https://fonts.google.com/specimen/Archivo) and [IBM Plex Mono](https://fonts.google.com/specimen/IBM+Plex+Mono) (SIL Open Font License), via Google Fonts
 - [Playwright](https://playwright.dev/) (Apache-2.0), for the still renderer and the headless checks
+- [mp4-muxer](https://github.com/Vanilagy/mp4-muxer) (MIT), for writing the film's MP4; impact sounds by [Kenney](https://kenney.nl/) (CC0)
 - Built by **M. Sree Ganesh**, with Claude
 
 <div align="center">
