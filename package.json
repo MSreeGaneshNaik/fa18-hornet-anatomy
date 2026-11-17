@@ -1,0 +1,30 @@
+{
+  "name": "fa18-hornet-anatomy",
+  "version": "1.0.0",
+  "description": "Interactive 3D technical drawing of the F/A-18A Hornet and its F404-GE-400 engines: take the jet apart, light the afterburners, fire the cannon.",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "shot": "node scripts/shot.mjs",
+    "render": "node scripts/render.mjs",
+    "deploy": "sh scripts/deploy.sh"
+  },
+  "keywords": [
+    "f-18",
+    "hornet",
+    "f404",
+    "three.js",
+    "webgl",
+    "aircraft",
+    "jet-engine",
+    "visualization"
+  ],
+  "author": "M. Sree Ganesh",
+  "license": "MIT",
+  "dependencies": {
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
+}
