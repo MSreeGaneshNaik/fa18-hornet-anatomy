@@ -178,5 +178,16 @@ function boot() {
     return render({ name: s.name, theme: s.theme, cam: s.cam, zoom: s.zoom, pan: s.pan, settle: s.settle, ...o });
   }
   window.HORNET = { fusAt, rimAt, LOADS, LIVE, setFire, C, CAM, MODS, MENU_ITEMS, selectItem, setExplode, setRunning, setLever, resetView, zoomBy, orbitBy, snap, render, pose, still, STILLS, gpu: gpuName };
+  // Opened as …/?relay by another window, the page renders stills on request and hands each PNG straight back to that window
+  // (postMessage), so finished renders can go from this GPU to an upload form without touching the disk. Only GitHub and this site may ask.
+  if (/[?&]relay\b/.test(location.search) && window.opener) {
+    const ok = (o) => o === "https://github.com" || o === location.origin;
+    addEventListener("message", async (e) => {
+      if (!ok(e.origin) || !e.data || e.data.hornet !== "still") return;
+      try { const info = await still(e.data.name, { ...(e.data.opts || {}), save: false }); e.source.postMessage({ hornet: "done", info, blob: HORNET.lastStill }, e.origin); }
+      catch (err) { e.source.postMessage({ hornet: "error", name: e.data.name, message: String((err && err.message) || err) }, e.origin); }
+    });
+    for (const o of ["https://github.com", location.origin]) try { window.opener.postMessage({ hornet: "ready", stills: STILLS.map((x) => x.name), gpu: gpuName() }, o); } catch (e) {}
+  }
 }
 boot();

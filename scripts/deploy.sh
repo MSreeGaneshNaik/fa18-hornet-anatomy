@@ -13,7 +13,7 @@ else
   git -C "$site" checkout -q --orphan gh-pages
 fi
 cd "$site"
-git rm -rq --ignore-unmatch .
+git rm -rqf --ignore-unmatch .
 cp "$repo/dist/hornet.html" index.html
 cp "$repo/dist/hornet.html" hornet.html
 touch .nojekyll
