@@ -3222,8 +3222,8 @@ function boot() {
     selectItem(p.sel || "whole");
     setRunning(!!p.running); setExplode(!!p.explode);
     C.lever = p.lever ?? MIL_AT; C.feet = p.feet || 0; C.fold = !!p.fold; C.canopy = !!p.canopy; C.probe = !!p.probe; C.load = p.load || 0;
-    C.fire = false; if (p.fire) setFire(true);
-    if (p.fire) { C.gunSpin = 1; }
+    C.fire = false; C.rounds = GUN.rounds; C.gunFeed = 0;       // a full drum, so a firing pose is always caught mid-burst
+    if (p.fire) setFire(true);
     UI.sync();
   }
   async function still(id, o = {}) {
