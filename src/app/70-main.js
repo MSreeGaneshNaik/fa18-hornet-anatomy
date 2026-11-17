@@ -115,7 +115,7 @@ function boot() {
   // ---- Stills: one frame at any size, drawn by this machine's GPU and saved as a PNG ----
   // HORNET.render({ w, h, ss, line, name, theme, cam, zoom, pan, save })   6016 × 3384 by default (6K, 16:9)
   //   ss    supersampling of geometry and ink, 1 to 2, on top of 4× MSAA and the edge-smoothing pass
-  //   line  ink line weight in output pixels
+  //   line  ink line weight in output pixels (by default the same share of the picture as on the page: 2 px at 6K)
   //   cam   { az, el, h, target: [x, y, z] } in degrees and metres; left out, the view frames the selected part
   //   zoom, pan  tighten the framing and slide it, pan as fractions of the picture [right, up]
   let busy = false;
@@ -129,7 +129,7 @@ function boot() {
     try {
       if (o.theme) { document.documentElement.dataset.theme = o.theme; retheme(); }
       if (PIPE.aa !== (o.aa !== false)) PIPE.setAA(o.aa !== false);
-      PIPE.still = { ss: o.ss || 2, line: o.line || 1.5 }; UI.insets = { top: 0, bottom: 0 };       // no interface over a still: frame to the whole picture
+      PIPE.still = { ss: o.ss || 2, line: o.line || Math.max(1, W / 3000) }; UI.insets = { top: 0, bottom: 0 };       // no interface over a still: frame to the whole picture
       PIPE.resize(W, H, 1); ss = PIPE.ss;
       snap();
       for (let i = 0, n = o.settle ?? 90; i < n; i++) applyFrame(1 / 60);     // let springs, flames and smoke reach a steady state
@@ -141,6 +141,7 @@ function boot() {
       if (o.cam && o.cam.target) CAM.target.fromArray(o.cam.target);
       if (o.zoom) CAM.h /= o.zoom;
       if (o.pan) CAM.target.addScaledVector(CAM_RIGHT, -o.pan[0] * CAM.h * (W / H)).addScaledVector(CAM_UP, -o.pan[1] * CAM.h);
+      for (const k in MODS) { HI[k] = 0; MODS[k].mats.forEach((m) => (m.uniforms.uHi.value = 0)); }     // no hover or selection tint in a still
       while (gl.getError());
       draw(); gl.finish();
       err = gl.getError();

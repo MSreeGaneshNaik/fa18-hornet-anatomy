@@ -4,7 +4,7 @@
 //   node scripts/render.mjs                         every still → docs/images/6k/
 //   node scripts/render.mjs 01-afterburner 07-plan  only these
 //   --w=6016 --h=3384   picture size            --ss=2      supersampling of geometry and ink (1 to 2)
-//   --line=1.5          ink weight, output px   --out=dir   where the PNGs go
+//   --line=2            ink weight, output px   --out=dir   where the PNGs go
 //   --chrome=/path      use this Chrome         --headless  no window (some GPUs only render with one)
 //   --software          allow the SwiftShader software renderer (refused otherwise: these are meant to be GPU renders)
 import { chromium } from "playwright";
@@ -46,7 +46,8 @@ const all = await page.evaluate("HORNET.STILLS.map((s) => ({ name: s.name, title
 const list = names.length ? all.filter((s) => names.includes(s.name)) : all;
 const log = [];
 for (const s of list) {
-  const o = { w: W, h: H, ss: +(opt.ss || 2), line: +(opt.line || 1.5) };
+  const o = { w: W, h: H, ss: +(opt.ss || 2) };
+  if (opt.line) o.line = +opt.line;
   if (opt.noaa) o.aa = false;
   const [download, info] = await Promise.all([page.waitForEvent("download", { timeout: 600000 }), page.evaluate(([name, o]) => HORNET.still(name, o), [s.name, o])]);
   await download.saveAs(join(out, info.name));
