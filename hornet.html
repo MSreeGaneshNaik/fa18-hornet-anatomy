@@ -3248,6 +3248,7 @@ function boot() {
       CAM.fly = null; CAM.user = true;
       return { w: PIPE.cw, h: PIPE.ch, ss: PIPE.ss, gpu: gpuName() };
     },
+    line(px) { if (PIPE.still && PIPE.still.line !== px) { PIPE.still.line = px; PIPE.comp.uniforms.uLW.value = Math.max(1, px * PIPE.ss); } },      // ink weight, in output pixels
     theme(t) { if (document.documentElement.dataset.theme !== t) { document.documentElement.dataset.theme = t; retheme(); } },
     pose(p) { pose(p); snap(); applyFrame(1e-6); CAM.snap = false; CAM.user = true; },     // one tiny step puts every part where the pose says
     step(dt) { applyFrame(dt); },
