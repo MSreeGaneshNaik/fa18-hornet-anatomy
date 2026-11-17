@@ -3233,6 +3233,45 @@ function boot() {
     return render({ name: s.name, theme: s.theme, cam: s.cam, zoom: s.zoom, pan: s.pan, settle: s.settle, ...o });
   }
   window.HORNET = { fusAt, rimAt, LOADS, LIVE, setFire, C, CAM, MODS, MENU_ITEMS, selectItem, setExplode, setRunning, setLever, resetView, zoomBy, orbitBy, snap, render, pose, still, STILLS, gpu: gpuName };
+  // ---- Film: the same drawing, one frame at a time. A director script (film/director.js) poses the aircraft, steps the
+  // animation by exactly one frame's worth of time, places the camera and takes the canvas; nothing depends on the wall clock.
+  const film = {
+    on: false, keep: null,
+    begin(o = {}) {
+      if (busy) throw new Error("busy");
+      busy = true; this.on = true;
+      this.keep = { insets: UI.insets, aa: PIPE.aa, theme: document.documentElement.dataset.theme, cam: { az: CAM.az, el: CAM.el, h: CAM.h, target: CAM.target.clone(), user: CAM.user, fly: CAM.fly } };
+      UI.insets = { top: 0, bottom: 0 };
+      if (PIPE.aa !== (o.aa !== false)) PIPE.setAA(o.aa !== false);
+      PIPE.still = { ss: o.ss || 2, line: o.line || Math.max(1, (o.w || 3840) / 3000) };
+      PIPE.resize(Math.round(o.w || 3840), Math.round(o.h || 2160), 1);
+      CAM.fly = null; CAM.user = true;
+      return { w: PIPE.cw, h: PIPE.ch, ss: PIPE.ss, gpu: gpuName() };
+    },
+    line(px) { if (PIPE.still && PIPE.still.line !== px) { PIPE.still.line = px; PIPE.comp.uniforms.uLW.value = Math.max(1, px * PIPE.ss); } },      // ink weight, in output pixels
+    theme(t) { if (document.documentElement.dataset.theme !== t) { document.documentElement.dataset.theme = t; retheme(); } },
+    pose(p) { pose(p); snap(); applyFrame(1e-6); CAM.snap = false; CAM.user = true; },     // one tiny step puts every part where the pose says
+    step(dt) { applyFrame(dt); },
+    // where the camera would sit to frame the selected part from this angle: { c: [x, y, z], h }
+    focus(az, el) { CAM.az = az * DEG; CAM.el = el * DEG; camBasis(); SCENE.updateMatrixWorld(true); const f = focusFrame(); return { c: f.c.toArray(), h: f.h }; },
+    frame(cam) {
+      CAM.az = cam.az * DEG; CAM.el = cam.el * DEG; CAM.h = cam.h; CAM.target.fromArray(cam.c);
+      for (const k in MODS) { if (HI[k]) { HI[k] = 0; MODS[k].mats.forEach((m) => (m.uniforms.uHi.value = 0)); } }
+      draw();
+      return canvas;
+    },
+    end() {
+      const k = this.keep; if (!k) return;
+      PIPE.still = null; UI.insets = k.insets;
+      if (k.theme) document.documentElement.dataset.theme = k.theme; else delete document.documentElement.dataset.theme;
+      retheme();
+      if (PIPE.aa !== k.aa) PIPE.setAA(k.aa);
+      resize();
+      Object.assign(CAM, { az: k.cam.az, el: k.cam.el, h: k.cam.h, user: k.cam.user, fly: k.cam.fly }); CAM.target.copy(k.cam.target);
+      this.on = false; this.keep = null; busy = false; last = performance.now(); requestAnimationFrame(frame);
+    },
+  };
+  HORNET.film = film;
   // Opened as …/?relay by another window, the page renders stills on request and hands each PNG straight back to that window
   // (postMessage), so finished renders can go from this GPU to an upload form without touching the disk. Only GitHub and this site may ask.
   if (/[?&]relay\b/.test(location.search) && window.opener) {
